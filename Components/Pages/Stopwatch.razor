@@ -1,0 +1,110 @@
+﻿@page "/stopwatch"
+
+<MudPaper Class="pa-4">
+
+    <!-- Elapsed Time Display -->
+
+    <MudPaper Height="100%" Width="100%" Style="display: flex; justify-content: center; align-items: center;">
+        <MudContainer Fixed="true" Class="pa-0">
+            <MudPaper Height="100%" Width="100%" Square="true" Class="mud-theme-primary" Style="display: flex; justify-content: center; align-items: center;">
+                <MudText Typo="Typo.h1" Align="Align.Center" Style="line-height: 1;">
+                    @elapsedTime.ToString("hh\\:mm\\:ss\\.ff")
+                </MudText>
+            </MudPaper>
+        </MudContainer>
+    </MudPaper>
+    <!-- Buttons -->
+    <div style="display: flex; justify-content: center; gap: 16px; margin-top: 16px;">
+        <MudButton Variant="Variant.Filled" Color="Color.Success" OnClick="StartStopwatch" Disabled="@isRunning">
+            Start
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Error" OnClick="StopStopwatch" Disabled="!isRunning">
+            Stop
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Secondary" OnClick="RecordLap" Disabled="!isRunning">
+            Lap
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Warning" OnClick="ResetStopwatch">
+            Reset
+        </MudButton>
+
+    </div>
+
+    <!-- Laps List -->
+    <MudPaper Class="pa-4 mt-4">
+        <MudText Typo="Typo.h6">Laps</MudText>
+        @if (laps.Count > 0)
+        {
+            <MudTable Items="@laps" Dense="true" Bordered="true">
+                <HeaderContent>
+                    <MudTh>#</MudTh>
+                    <MudTh>Time</MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd>@context.LapNumber</MudTd>
+                    <MudTd>@context.Time.ToString("hh\\:mm\\:ss\\.fff")</MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
+        else
+        {
+            <MudText Typo="Typo.body2" Class="mt-2">No laps recorded yet.</MudText>
+        }
+    </MudPaper>
+</MudPaper>
+
+@code {
+    private TimeSpan elapsedTime = TimeSpan.Zero;
+    private bool isRunning = false;
+    private System.Timers.Timer? timer;
+    private List<Lap> laps = new();
+
+    private void StartStopwatch()
+    {
+        if (isRunning) return;
+        isRunning = true;
+
+        // Start a timer to update the elapsed time every 10ms
+        timer = new System.Timers.Timer(10); // 10 ms interval
+        timer.Elapsed += (sender, args) =>
+        {
+            InvokeAsync(() =>
+            {
+                elapsedTime = elapsedTime.Add(TimeSpan.FromMilliseconds(10));
+                StateHasChanged();
+            });
+        };
+        timer.Start();
+    }
+
+    private void StopStopwatch()
+    {
+        if (!isRunning) return;
+        isRunning = false;
+        timer?.Stop();
+    }
+
+    private void RecordLap()
+    {
+        laps.Add(new Lap
+            {
+                LapNumber = laps.Count + 1,
+                Time = elapsedTime
+            });
+    }
+
+    private void ResetStopwatch()
+    {
+        elapsedTime = TimeSpan.Zero;
+        isRunning = false;
+        laps.Clear();
+        timer?.Stop();
+        StateHasChanged();
+    }
+
+    private class Lap
+    {
+        public int LapNumber { get; set; }
+        public TimeSpan Time { get; set; }
+    }
+}
